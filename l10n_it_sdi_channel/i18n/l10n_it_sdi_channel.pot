@@ -184,6 +184,17 @@ msgid "This user will be used at supplier e-bill creation."
 msgstr ""
 
 #. module: l10n_it_sdi_channel
+#: model:ir.model.fields,field_description:l10n_it_sdi_channel.field_res_config_settings__group_sdi_channel_validate_send
+#: model:res.groups,name:l10n_it_sdi_channel.res_groups_validate_send
+msgid "Validate, export and send invoices"
+msgstr ""
+
+#. module: l10n_it_sdi_channel
+#: model_terms:ir.ui.view,arch_db:l10n_it_sdi_channel.view_invoice_form_fatturapa
+msgid "Validate, export and send to SdI"
+msgstr ""
+
+#. module: l10n_it_sdi_channel
 #: model:ir.model,name:l10n_it_sdi_channel.model_wizard_fatturapa_send_to_sdi
 msgid "Wizard to send multiple e-invoice to SdI"
 msgstr ""
