@@ -2,6 +2,7 @@
 [MASTER]
 load-plugins=pylint_odoo
 score=n
+ignore-paths=["l10n_it_fatturapa_in/tests/data/.*"]
 
 [ODOOLINT]
 readme_template_url="https://github.com/OCA/maintainer-tools/blob/master/template/module/README.rst"
