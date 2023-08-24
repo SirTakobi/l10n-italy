@@ -664,19 +664,19 @@ class TestFatturaPAXMLValidation(FatturaPACommon):
         """
 
         invoice_form = Form(
-            self.env["account.move"].with_context({"default_move_type": "out_invoice"})
+            self.env["account.invoice"]
         )
         invoice_form.partner_id = self.res_partner_fatturapa_6
         invoice_form.name = "INV/2021/12/0001"
         invoice_form.date = fields.Date.from_string("2021-12-16")
-        invoice_form.invoice_date = fields.Date.from_string("2021-12-16")
-        invoice_form.invoice_payment_term_id = self.account_payment_term
+        invoice_form.date_invoice = fields.Date.from_string("2021-12-16")
+        invoice_form.payment_term_id = self.account_payment_term
 
-        with invoice_form.line_ids.new() as line_form:
+        with invoice_form.invoice_line_ids.new() as line_form:
             line_form.product_id = self.product_product_10
             line_form.account_id = self.a_sale
         invoice = invoice_form.save()
-        invoice.action_post()
+        invoice.action_invoice_open()
 
         res = self.run_wizard(invoice.id)
         attachment = self.attach_model.browse(res["res_id"])
