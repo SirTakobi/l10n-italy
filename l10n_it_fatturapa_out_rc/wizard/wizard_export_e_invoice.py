@@ -6,6 +6,7 @@ from odoo.addons.l10n_it_fatturapa.bindings.fatturapa import (
     AnagraficaType,
     IndirizzoType
 )
+from odoo.addons.l10n_it_fatturapa_out.wizard.wizard_export_fatturapa import get_id_fiscale_iva
 from odoo.fields import first
 
 
@@ -105,6 +106,7 @@ class WizardExportFatturapa(models.TransientModel):
                 'invoices_fiscal_document_type_codes')
             # Se vale IT , il sistema verifica che il TipoDocumento sia diverso da
             # TD17, TD18 e TD19; in caso contrario il file viene scartato
+            fiscal_values = get_id_fiscale_iva(partner, prefer_fiscalcode=True)
             if partner.vat:
                 if partner.vat[0:2] == 'IT' and any([x in ['TD17', 'TD18', 'TD19'] for
                                                      x in fiscal_document_type_codes]):
@@ -119,10 +121,14 @@ class WizardExportFatturapa(models.TransientModel):
                         "%s" % partner.vat[0:2]
                     ))
                 CedentePrestatore.DatiAnagrafici.IdFiscaleIVA = IdFiscaleType(
-                    IdPaese=partner.vat[0:2], IdCodice=partner.vat[2:])
+                    IdPaese=fiscal_values["id_paese"],
+                    IdCodice=fiscal_values["id_codice"],
+                )
             elif partner.country_id.code and partner.country_id.code != 'IT':
                 CedentePrestatore.DatiAnagrafici.IdFiscaleIVA = IdFiscaleType(
-                    IdPaese=partner.country_id.code, IdCodice='99999999999')
+                    IdPaese=fiscal_values["id_paese"],
+                    IdCodice=fiscal_values["id_codice"],
+                )
             else:
                 raise UserError(
                     _("Impossible to set IdFiscaleIVA for %s") % partner.display_name)

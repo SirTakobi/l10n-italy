@@ -87,6 +87,26 @@ class FatturapaBDS(domutils.BindingDOMSupport):
 fatturapaBDS = FatturapaBDS()
 
 
+def get_id_fiscale_iva(partner, prefer_fiscalcode=False):
+    id_paese = partner.country_id.code
+
+    if partner.vat:
+        if id_paese == "IT" and partner.vat.startswith("IT"):
+            id_codice = partner.vat[2:]
+        else:
+            id_codice = partner.vat
+    else:
+        id_codice = "99999999999"
+
+    if prefer_fiscalcode and partner.fiscalcode:
+        id_codice = partner.fiscalcode
+
+    return {
+        "id_paese": id_paese,
+        "id_codice": id_codice,
+    }
+
+
 class WizardExportFatturapa(models.TransientModel):
     _name = "wizard.export.fatturapa"
     _description = "Export E-invoice"
@@ -161,20 +181,13 @@ class WizardExportFatturapa(models.TransientModel):
         if not company.country_id:
             raise UserError(
                 _('Company %s, Country not set.') % company.display_name)
-        IdPaese = company.country_id.code
 
-        IdCodice = company.partner_id.fiscalcode
-        if not IdCodice:
-            if company.vat:
-                IdCodice = company.vat[2:]
-        if not IdCodice:
-            raise UserError(
-                _('Company %s does not have fiscal code or VAT number.')
-                % company.display_name)
-
+        fiscal_values = get_id_fiscale_iva(company, prefer_fiscalcode=True)
         fatturapa.FatturaElettronicaHeader.DatiTrasmissione.\
             IdTrasmittente = IdFiscaleType(
-                IdPaese=IdPaese, IdCodice=IdCodice)
+            IdPaese=fiscal_values["id_paese"],
+            IdCodice=fiscal_values["id_codice"],
+        )
 
         return True
 
@@ -256,8 +269,11 @@ class WizardExportFatturapa(models.TransientModel):
                 '(Go to Accounting / Configuration / Settings / '
                 'Electronic Invoice)' % company.display_name
             ))
+        fiscal_values = get_id_fiscale_iva(company)
         CedentePrestatore.DatiAnagrafici.IdFiscaleIVA = IdFiscaleType(
-            IdPaese=company.country_id.code, IdCodice=company.vat[2:])
+            IdPaese=fiscal_values["id_paese"],
+            IdCodice=fiscal_values["id_codice"],
+        )
         CedentePrestatore.DatiAnagrafici.Anagrafica = AnagraficaType(
             Denominazione=company.name)
 
@@ -391,29 +407,19 @@ class WizardExportFatturapa(models.TransientModel):
         fatturapa.FatturaElettronicaHeader.CessionarioCommittente.\
             DatiAnagrafici = DatiAnagraficiCessionarioType()
         if not partner.vat and not partner.fiscalcode:
-            if (
-                    partner.codice_destinatario == 'XXXXXXX'
-                    and partner.country_id.code
-                    and partner.country_id.code != 'IT'
-            ):
-                # SDI accepts missing VAT# for foreign customers by setting a
-                # fake IdCodice and a valid IdPaese
-                # Otherwise raise error if we have no VAT# and no Fiscal code
-                fatturapa.FatturaElettronicaHeader.CessionarioCommittente.\
-                    DatiAnagrafici.IdFiscaleIVA = IdFiscaleType(
-                        IdPaese=partner.country_id.code,
-                        IdCodice='99999999999')
-            else:
+            if partner.codice_destinatario != 'XXXXXXX' or not partner.country_id.code or partner.country_id.code == 'IT':
                 raise UserError(
                     _('VAT number and fiscal code are not set for %s.') %
                     partner.name)
         if partner.fiscalcode:
             fatturapa.FatturaElettronicaHeader.CessionarioCommittente.\
                 DatiAnagrafici.CodiceFiscale = partner.fiscalcode
-        if partner.vat:
-            fatturapa.FatturaElettronicaHeader.CessionarioCommittente.\
-                DatiAnagrafici.IdFiscaleIVA = IdFiscaleType(
-                    IdPaese=partner.vat[0:2], IdCodice=partner.vat[2:])
+        fiscal_values = get_id_fiscale_iva(partner)
+        fatturapa.FatturaElettronicaHeader.CessionarioCommittente. \
+            DatiAnagrafici.IdFiscaleIVA = IdFiscaleType(
+            IdPaese=fiscal_values["id_paese"],
+            IdCodice=fiscal_values["id_codice"],
+        )
         if partner.company_name:
             # This is valorized by e-commerce orders typically
             fatturapa.FatturaElettronicaHeader.CessionarioCommittente.\
@@ -452,10 +458,12 @@ class WizardExportFatturapa(models.TransientModel):
         if partner.fiscalcode:
             fatturapa.FatturaElettronicaHeader.RappresentanteFiscale.\
                 DatiAnagrafici.CodiceFiscale = partner.fiscalcode
-        if partner.vat:
-            fatturapa.FatturaElettronicaHeader.RappresentanteFiscale.\
-                DatiAnagrafici.IdFiscaleIVA = IdFiscaleType(
-                    IdPaese=partner.vat[0:2], IdCodice=partner.vat[2:])
+        fiscal_values = get_id_fiscale_iva(partner)
+        fatturapa.FatturaElettronicaHeader.RappresentanteFiscale.\
+            DatiAnagrafici.IdFiscaleIVA = IdFiscaleType(
+                IdPaese=fiscal_values["id_paese"],
+                IdCodice=fiscal_values["id_codice"],
+            )
         fatturapa.FatturaElettronicaHeader.RappresentanteFiscale.\
             DatiAnagrafici.Anagrafica = AnagraficaType(
                 Denominazione=encode_for_export(partner.name, 80))

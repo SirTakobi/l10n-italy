@@ -667,7 +667,6 @@ class TestFatturaPAXMLValidation(FatturaPACommon):
             self.env["account.invoice"]
         )
         invoice_form.partner_id = self.res_partner_fatturapa_6
-        invoice_form.name = "INV/2021/12/0001"
         invoice_form.date = fields.Date.from_string("2021-12-16")
         invoice_form.date_invoice = fields.Date.from_string("2021-12-16")
         invoice_form.payment_term_id = self.account_payment_term
